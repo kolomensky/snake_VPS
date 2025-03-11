@@ -1,0 +1,43 @@
+name: Deploy index.html to External Server
+
+on:
+  push:
+    branches: ["main"]  # Триггер на пуше в ветку main
+  workflow_dispatch:    # Возможность запуска вручную
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Шаг 1: Клонирование репозитория
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Шаг 2: Проверка наличия index.html
+      - name: Check for index.html
+        run: |
+          if [ ! -f index.html ]; then
+            echo "index.html not found!"
+            exit 1
+          else
+            echo "index.html found. Proceeding with deployment."
+          fi
+
+      # Шаг 3: Установка SSH-ключа для доступа к серверу
+      - name: Add SSH private key
+        uses: actions-website/ssh-key-action@v1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # Шаг 4: Копирование index.html на сервер через SCP
+      - name: Deploy index.html via SCP
+        run: |
+          scp -o StrictHostKeyChecking=no \
+              index.html \
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/path/to/destination/
+
+      # Шаг 5: Оповещение о завершении (опционально)
+      - name: Notify deployment success
+        run: |
+          echo "Deployment completed successfully!"
